@@ -1,8 +1,8 @@
 # Alma Livre — app de gestão do ateliê
 
-App (PWA) para a Raissa controlar o Ateliê Alma Livre (joias de prata) pelo iPhone.
-Ela é a única usuária e é leiga em tecnologia: telas simples, botões grandes, poucos
-passos, tudo em português do Brasil. O Bruno (marido) cuida da parte técnica.
+App (PWA) para a dona do Ateliê Alma Livre (joias de prata) controlar o negócio pelo
+iPhone. Ela é a única usuária e é leiga em tecnologia: telas simples, botões grandes,
+poucos passos, tudo em português do Brasil.
 
 ## Regras do negócio
 
@@ -22,7 +22,7 @@ passos, tudo em português do Brasil. O Bruno (marido) cuida da parte técnica.
 ## Arquitetura
 
 - Frontend: React + Vite + TypeScript, sem biblioteca de UI. CSS em `src/estilo.css`.
-- Dados: planilha do Google na conta do Bruno, acessada por um Apps Script publicado
+- Dados: planilha do Google do responsável técnico, acessada por um Apps Script publicado
   como App da Web (`apps-script/Code.gs`). Uma aba por tabela; a primeira coluna é `id`.
 - `src/lib/store.ts`: guarda tudo no aparelho (localStorage), aplica mudanças na hora e
   sincroniza em segundo plano (fila de operações `salvar`/`apagar`). Sem conexão
@@ -32,11 +32,16 @@ passos, tudo em português do Brasil. O Bruno (marido) cuida da parte técnica.
 
 ## Cuidados
 
-- Nada de dados reais no repositório: chave Pix, senha de conexão, nomes de clientes e
-  extratos bancários ficam só na planilha ou fora daqui.
+- **Este repositório é público** (o app é publicado pelo GitHub Pages). Nunca coloque
+  aqui, nem em código, testes, exemplos, comentários ou mensagens de commit: chave Pix,
+  CPF, telefones, e-mails, nomes de pessoas (donos ou clientes), endereço ou código de
+  conexão da planilha, extratos bancários ou qualquer dado real. Esses dados ficam só
+  na planilha ou no aparelho. Exemplos e testes usam sempre dados inventados.
+- O JavaScript publicado também é público: nenhum segredo pode ser embutido no build.
 - Mudou colunas de uma tabela? Atualize `TABELAS` em `apps-script/Code.gs`, `normalizar`
   em `store.ts` e avise que o script precisa ser republicado na planilha.
 - Antes de entregar: `npm test` e `npm run build`.
+- Publicação: todo envio para `main` publica sozinho (`.github/workflows/publicar.yml`).
 
 ## Fases
 

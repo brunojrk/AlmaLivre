@@ -1,4 +1,4 @@
-// Modelos de mensagem no tom da Raissa. Cada modelo pode ser editado em Ajustes;
+// Modelos de mensagem no tom de voz do ateliê. Cada modelo pode ser editado em Ajustes;
 // o texto editado fica na aba "config" da planilha com a chave `msg_<id>`.
 
 import { brl, dataBR, primeiroNome, type Cliente, type Posicao } from './dominio'
