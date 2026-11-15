@@ -105,15 +105,28 @@ function trocarEndereco() {
 
 // ---------- API usada pelo app ----------
 
+/**
+ * Abrir o endereço no navegador mostra um diagnóstico sem nenhum dado nem
+ * segredo: só se este script está ligado a uma planilha e se já tem senha.
+ */
 function doGet() {
-  return json_({ ok: true, app: 'alma-livre' });
+  return json_({
+    ok: true,
+    app: 'alma-livre',
+    versao: 2,
+    ligado_a_planilha: !!SpreadsheetApp.getActive(),
+    senha_configurada: !!PropertiesService.getScriptProperties().getProperty('TOKEN')
+  });
 }
 
 function doPost(e) {
   try {
     var pedido = JSON.parse(e.postData.contents);
     var token = PropertiesService.getScriptProperties().getProperty('TOKEN');
-    if (!token || pedido.token !== token) return json_({ ok: false, erro: 'Senha de conexão inválida.' });
+    if (!token) return json_({ ok: false, erro: 'Este script ainda não tem senha. Rode "configurar" no projeto ligado à planilha.' });
+    if (String(pedido.token || '').trim() !== token) {
+      return json_({ ok: false, erro: 'A senha não confere com a deste endereço.' });
+    }
 
     if (pedido.acao === 'ler') return json_({ ok: true, tabelas: lerTudo_() });
 
