@@ -42,10 +42,7 @@ function configurar() {
   ss.setSpreadsheetTimeZone('America/Sao_Paulo');
   Object.keys(TABELAS).forEach(function (nome) { garantirAba_(ss, nome, TABELAS[nome]); });
   garantirAba_(ss, ABA_IMPORTAR, COLUNAS_IMPORTAR);
-  var props = PropertiesService.getScriptProperties();
-  if (!props.getProperty('TOKEN')) {
-    props.setProperty('TOKEN', Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, ''));
-  }
+  garantirAcesso_();
   var padrao = ss.getSheetByName('Página1') || ss.getSheetByName('Sheet1');
   if (padrao && padrao.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(padrao);
   SpreadsheetApp.getUi().alert('Planilha configurada. Agora publique como App da Web (veja INSTALAR.md).');
@@ -67,18 +64,53 @@ function garantirAba_(ss, nome, colunas) {
   return aba;
 }
 
-function mostrarCodigo() {
+// ---------- senha e endereço (aba "acesso") ----------
+//
+// A senha e o endereço ficam na própria planilha, na aba oculta "acesso", e não
+// nas propriedades do script. Assim, mesmo que a planilha acabe com mais de um
+// projeto de script, todos enxergam a mesma senha.
+
+var ABA_ACESSO = 'acesso';
+
+function garantirAcesso_() {
+  var ss = SpreadsheetApp.getActive();
+  var aba = ss.getSheetByName(ABA_ACESSO);
+  if (!aba) {
+    aba = ss.insertSheet(ABA_ACESSO);
+    aba.getRange('A1:A2').setValues([['senha'], ['endereco']]).setFontWeight('bold');
+    aba.getRange('A4').setValue('Não apague, não edite e não compartilhe esta aba: ela guarda a senha do app.');
+    aba.setColumnWidth(2, 700);
+  }
   var props = PropertiesService.getScriptProperties();
-  var token = props.getProperty('TOKEN');
+  if (!String(aba.getRange('B1').getValue())) {
+    var nova = props.getProperty('TOKEN') ||
+      Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+    aba.getRange('B1').setNumberFormat('@').setValue(nova);
+  }
+  if (!String(aba.getRange('B2').getValue()) && props.getProperty('URL')) {
+    aba.getRange('B2').setValue(props.getProperty('URL'));
+  }
+  aba.hideSheet();
+  return aba;
+}
+
+function lerAcesso_(celula) {
+  var aba = SpreadsheetApp.getActive().getSheetByName(ABA_ACESSO);
+  return aba ? String(aba.getRange(celula).getValue()).trim() : '';
+}
+
+function senha_() {
+  return lerAcesso_('B1');
+}
+
+function mostrarCodigo() {
   var ui = SpreadsheetApp.getUi();
-  if (!token) return ui.alert('Rode primeiro "Configurar planilha (primeira vez)".');
-  var url = props.getProperty('URL');
+  garantirAcesso_();
+  var url = lerAcesso_('B2');
   if (!url) return trocarEndereco();
-  var problema = testarConexao_(url, token);
-  if (problema) return ui.alert('O código ainda não vai funcionar', problema, ui.ButtonSet.OK);
   var html = HtmlService.createHtmlOutput(
     '<p style="font-family:sans-serif">Copie tudo e cole no app, em Ajustes › Código de conexão:</p>' +
-    '<textarea style="width:100%;height:120px" readonly onclick="this.select()">' + url + '|' + token + '</textarea>' +
+    '<textarea style="width:100%;height:120px" readonly onclick="this.select()">' + url + '|' + senha_() + '</textarea>' +
     '<p style="font-family:sans-serif;color:#a33">Quem tiver este código acessa os dados. Não compartilhe.</p>'
   ).setWidth(480).setHeight(260);
   ui.showModalDialog(html, 'Código de conexão');
@@ -101,42 +133,24 @@ function trocarEndereco() {
   if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) {
     return ui.alert('Esse não parece o endereço certo. Ele começa com https://script.google.com/macros/s/ e termina em /exec.');
   }
-  PropertiesService.getScriptProperties().setProperty('URL', url);
+  garantirAcesso_().getRange('B2').setValue(url);
   mostrarCodigo();
 }
 
 /**
- * Faz daqui o mesmo pedido que o app faria. Devolve '' se deu certo ou a
- * explicação do problema. Pega o caso de haver dois projetos de script na
- * mesma planilha: o endereço de um e a senha do outro.
+ * Alternativa ao menu: rode esta função pelo editor (botão Executar) e leia o
+ * código de conexão no "Registro de execução", na parte de baixo da tela.
  */
-function testarConexao_(url, token) {
-  var resposta;
-  try {
-    resposta = UrlFetchApp.fetch(url, {
-      method: 'post',
-      contentType: 'text/plain',
-      payload: JSON.stringify({ acao: 'ping', token: token }),
-      muteHttpExceptions: true
-    });
-  } catch (e) {
-    return 'Não consegui acessar o endereço informado: ' + e;
+function codigoNoRegistro() {
+  garantirAcesso_();
+  var url = lerAcesso_('B2');
+  if (url) {
+    Logger.log('Código de conexão (copie a linha de baixo inteira):');
+    Logger.log(url + '|' + senha_());
+  } else {
+    Logger.log('Monte o código assim: URL do app da Web, uma barra vertical | e a senha abaixo, tudo junto.');
+    Logger.log('Senha: ' + senha_());
   }
-  var r;
-  try {
-    r = JSON.parse(resposta.getContentText());
-  } catch (e) {
-    return 'O endereço não respondeu como o app da Web do Alma Livre. Confira se "Quem pode acessar" está como "Qualquer pessoa".';
-  }
-  if (r.ok && r.script === ScriptApp.getScriptId()) return '';
-  if (r.script && r.script !== ScriptApp.getScriptId()) {
-    return 'O endereço informado pertence a OUTRO projeto de script, não a este que mostra o menu. ' +
-      'A planilha tem dois projetos de script. Neste projeto aqui (Extensões > Apps Script), abra ' +
-      'Implantar > Gerenciar implantações, copie o URL do app da Web e informe em ' +
-      '"Alma Livre > Trocar o endereço do App da Web". Se não houver implantação aqui, crie uma.';
-  }
-  return 'O endereço recusou o pedido: ' + (r.erro || 'motivo desconhecido') +
-    ' Se o endereço ainda serve uma versão antiga do script, publique uma nova versão.';
 }
 
 // ---------- API usada pelo app ----------
@@ -149,28 +163,25 @@ function doGet() {
   return json_({
     ok: true,
     app: 'alma-livre',
-    versao: 3,
+    versao: 4,
     ligado_a_planilha: !!SpreadsheetApp.getActive(),
-    senha_configurada: !!PropertiesService.getScriptProperties().getProperty('TOKEN')
+    senha_configurada: !!(SpreadsheetApp.getActive() && senha_())
   });
 }
 
 function doPost(e) {
   try {
     var pedido = JSON.parse(e.postData.contents);
-    var token = PropertiesService.getScriptProperties().getProperty('TOKEN');
-    if (!token) return json_({ ok: false, erro: 'Este script ainda não tem senha. Rode "configurar" no projeto ligado à planilha.' });
+    var token = senha_();
+    if (!token) return json_({ ok: false, erro: 'A planilha ainda não tem senha. Use o menu Alma Livre > Configurar planilha.' });
     var recebida = String(pedido.token || '').trim();
     if (recebida !== token) {
       return json_({
         ok: false,
-        script: ScriptApp.getScriptId(),
         erro: 'A senha não confere com a deste endereço (chegaram ' + recebida.length +
           ' caracteres; a senha tem ' + token.length + ').'
       });
     }
-
-    if (pedido.acao === 'ping') return json_({ ok: true, script: ScriptApp.getScriptId() });
 
     if (pedido.acao === 'ler') return json_({ ok: true, tabelas: lerTudo_() });
 

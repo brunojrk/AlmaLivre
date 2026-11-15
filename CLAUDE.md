@@ -40,7 +40,13 @@ poucos passos, tudo em português do Brasil.
 - O JavaScript publicado também é público: nenhum segredo pode ser embutido no build.
 - Mudou colunas de uma tabela? Atualize `TABELAS` em `apps-script/Code.gs`, `normalizar`
   em `store.ts` e avise que o script precisa ser republicado na planilha.
-- Antes de entregar: `npm test` e `npm run build`.
+- Antes de entregar: `npm test` e `npm run build`. O `npm test` também roda o `Code.gs`
+  numa simulação do Apps Script (`apps-script/teste.cjs`); ela não substitui o teste na
+  planilha real.
+- A senha e o endereço do app ficam na aba oculta `acesso` da planilha, não nas
+  propriedades do script, para valerem em qualquer projeto de script ligado a ela.
+- Não use no script serviços que exijam permissão nova (ex.: `UrlFetchApp`): cada
+  permissão extra obriga o dono da planilha a reautorizar tudo.
 - Publicação: todo envio para `main` publica sozinho (`.github/workflows/publicar.yml`).
 
 ## Fases

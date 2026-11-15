@@ -17,7 +17,7 @@ Feito uma vez só, no computador, com a conta Google onde a planilha vai ficar.
    **Acessar (não seguro)**. O aviso aparece porque o script é seu e não passou pela
    revisão do Google; ele só acessa esta planilha.
 3. Volte à planilha: as abas `clientes`, `parcelas`, `recebimentos`, `config` e `Importar`
-   foram criadas.
+   foram criadas. Há também uma aba oculta `acesso`, que guarda a senha do app.
 
 ## 3. Publicar
 
@@ -35,8 +35,11 @@ Feito uma vez só, no computador, com a conta Google onde a planilha vai ficar.
 3. No app, no iPhone: **Ajustes › Código de conexão**, cole e toque em **Conectar**.
    Envie o código para o iPhone por um meio privado (AirDrop, mensagem para você mesmo).
 
+Se o menu não aparecer, rode a função `codigoNoRegistro` pelo editor: o código de conexão
+sai no "Registro de execução".
+
 Para conferir se a publicação funcionou, abra o URL do app da Web em uma janela anônima.
-Deve aparecer o texto `{"ok":true,"app":"alma-livre"}`. Com mais de uma conta Google
+Deve aparecer o texto algo como `{"ok":true,"app":"alma-livre",...}`. Com mais de uma conta Google
 logada no navegador, o Google costuma mostrar "Não foi possível abrir o arquivo"; use
 uma janela com uma conta só.
 
@@ -56,5 +59,7 @@ continuam os mesmos.
 ## Cuidados com a planilha
 
 - Não renomeie as abas nem os cabeçalhos da linha 1.
+- A aba oculta `acesso` guarda a senha do app. Quem tem acesso à planilha consegue vê-la;
+  compartilhe a planilha só com quem pode usar o app.
 - Pode corrigir valores direto nas células; o app pega a mudança na próxima atualização.
 - Para suas análises, crie abas novas: o app não mexe nelas.
