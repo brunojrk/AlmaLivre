@@ -74,6 +74,8 @@ function mostrarCodigo() {
   if (!token) return ui.alert('Rode primeiro "Configurar planilha (primeira vez)".');
   var url = props.getProperty('URL');
   if (!url) return trocarEndereco();
+  var problema = testarConexao_(url, token);
+  if (problema) return ui.alert('O código ainda não vai funcionar', problema, ui.ButtonSet.OK);
   var html = HtmlService.createHtmlOutput(
     '<p style="font-family:sans-serif">Copie tudo e cole no app, em Ajustes › Código de conexão:</p>' +
     '<textarea style="width:100%;height:120px" readonly onclick="this.select()">' + url + '|' + token + '</textarea>' +
@@ -103,6 +105,40 @@ function trocarEndereco() {
   mostrarCodigo();
 }
 
+/**
+ * Faz daqui o mesmo pedido que o app faria. Devolve '' se deu certo ou a
+ * explicação do problema. Pega o caso de haver dois projetos de script na
+ * mesma planilha: o endereço de um e a senha do outro.
+ */
+function testarConexao_(url, token) {
+  var resposta;
+  try {
+    resposta = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'text/plain',
+      payload: JSON.stringify({ acao: 'ping', token: token }),
+      muteHttpExceptions: true
+    });
+  } catch (e) {
+    return 'Não consegui acessar o endereço informado: ' + e;
+  }
+  var r;
+  try {
+    r = JSON.parse(resposta.getContentText());
+  } catch (e) {
+    return 'O endereço não respondeu como o app da Web do Alma Livre. Confira se "Quem pode acessar" está como "Qualquer pessoa".';
+  }
+  if (r.ok && r.script === ScriptApp.getScriptId()) return '';
+  if (r.script && r.script !== ScriptApp.getScriptId()) {
+    return 'O endereço informado pertence a OUTRO projeto de script, não a este que mostra o menu. ' +
+      'A planilha tem dois projetos de script. Neste projeto aqui (Extensões > Apps Script), abra ' +
+      'Implantar > Gerenciar implantações, copie o URL do app da Web e informe em ' +
+      '"Alma Livre > Trocar o endereço do App da Web". Se não houver implantação aqui, crie uma.';
+  }
+  return 'O endereço recusou o pedido: ' + (r.erro || 'motivo desconhecido') +
+    ' Se o endereço ainda serve uma versão antiga do script, publique uma nova versão.';
+}
+
 // ---------- API usada pelo app ----------
 
 /**
@@ -113,7 +149,7 @@ function doGet() {
   return json_({
     ok: true,
     app: 'alma-livre',
-    versao: 2,
+    versao: 3,
     ligado_a_planilha: !!SpreadsheetApp.getActive(),
     senha_configurada: !!PropertiesService.getScriptProperties().getProperty('TOKEN')
   });
@@ -124,9 +160,17 @@ function doPost(e) {
     var pedido = JSON.parse(e.postData.contents);
     var token = PropertiesService.getScriptProperties().getProperty('TOKEN');
     if (!token) return json_({ ok: false, erro: 'Este script ainda não tem senha. Rode "configurar" no projeto ligado à planilha.' });
-    if (String(pedido.token || '').trim() !== token) {
-      return json_({ ok: false, erro: 'A senha não confere com a deste endereço.' });
+    var recebida = String(pedido.token || '').trim();
+    if (recebida !== token) {
+      return json_({
+        ok: false,
+        script: ScriptApp.getScriptId(),
+        erro: 'A senha não confere com a deste endereço (chegaram ' + recebida.length +
+          ' caracteres; a senha tem ' + token.length + ').'
+      });
     }
+
+    if (pedido.acao === 'ping') return json_({ ok: true, script: ScriptApp.getScriptId() });
 
     if (pedido.acao === 'ler') return json_({ ok: true, tabelas: lerTudo_() });
 
