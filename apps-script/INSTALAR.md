@@ -25,14 +25,20 @@ Feito uma vez só, no computador, com a conta Google onde a planilha vai ficar.
 2. Em **Selecionar tipo** (engrenagem), escolha **App da Web**.
 3. **Executar como**: *Eu*. **Quem pode acessar**: *Qualquer pessoa*.
    (O app só é atendido com a senha de conexão; sem ela o script recusa o pedido.)
-4. Clique em **Implantar**.
+4. Clique em **Implantar** e copie o **URL do app da Web** (termina em `/exec`).
 
 ## 4. Conectar o app
 
 1. Recarregue a planilha. Aparece o menu **Alma Livre**.
-2. **Alma Livre › Código de conexão**: copie o código inteiro.
+2. **Alma Livre › Código de conexão**: na primeira vez ele pede o URL do app da Web
+   copiado no passo anterior. Depois mostra o código de conexão: copie o código inteiro.
 3. No app, no iPhone: **Ajustes › Código de conexão**, cole e toque em **Conectar**.
    Envie o código para o iPhone por um meio privado (AirDrop, mensagem para você mesmo).
+
+Para conferir se a publicação funcionou, abra o URL do app da Web em uma janela anônima.
+Deve aparecer o texto `{"ok":true,"app":"alma-livre"}`. Com mais de uma conta Google
+logada no navegador, o Google costuma mostrar "Não foi possível abrir o arquivo"; use
+uma janela com uma conta só.
 
 ## Importar as fichinhas em papel
 

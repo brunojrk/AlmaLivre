@@ -29,6 +29,7 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Alma Livre')
     .addItem('Código de conexão', 'mostrarCodigo')
+    .addItem('Trocar o endereço do App da Web', 'trocarEndereco')
     .addItem('Importar fichinhas da aba "Importar"', 'importarFichinhas')
     .addSeparator()
     .addItem('Configurar planilha (primeira vez)', 'configurar')
@@ -67,18 +68,39 @@ function garantirAba_(ss, nome, colunas) {
 }
 
 function mostrarCodigo() {
-  var token = PropertiesService.getScriptProperties().getProperty('TOKEN');
+  var props = PropertiesService.getScriptProperties();
+  var token = props.getProperty('TOKEN');
   var ui = SpreadsheetApp.getUi();
   if (!token) return ui.alert('Rode primeiro "Configurar planilha (primeira vez)".');
-  var url = ScriptApp.getService().getUrl();
-  if (!url) return ui.alert('Publique primeiro como App da Web (Implantar > Nova implantação).');
-  url = url.replace(/\/dev$/, '/exec');
+  var url = props.getProperty('URL');
+  if (!url) return trocarEndereco();
   var html = HtmlService.createHtmlOutput(
     '<p style="font-family:sans-serif">Copie tudo e cole no app, em Ajustes › Código de conexão:</p>' +
     '<textarea style="width:100%;height:120px" readonly onclick="this.select()">' + url + '|' + token + '</textarea>' +
     '<p style="font-family:sans-serif;color:#a33">Quem tiver este código acessa os dados. Não compartilhe.</p>'
   ).setWidth(480).setHeight(260);
   ui.showModalDialog(html, 'Código de conexão');
+}
+
+/**
+ * O endereço do App da Web só aparece na janela de implantação, então é
+ * informado aqui uma vez. (ScriptApp.getService().getUrl() devolve o endereço
+ * de teste, que não serve para o app.)
+ */
+function trocarEndereco() {
+  var ui = SpreadsheetApp.getUi();
+  var r = ui.prompt(
+    'Endereço do App da Web',
+    'Cole o "URL do app da Web" que aparece em Implantar > Gerenciar implantações (termina em /exec):',
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  var url = r.getResponseText().trim();
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) {
+    return ui.alert('Esse não parece o endereço certo. Ele começa com https://script.google.com/macros/s/ e termina em /exec.');
+  }
+  PropertiesService.getScriptProperties().setProperty('URL', url);
+  mostrarCodigo();
 }
 
 // ---------- API usada pelo app ----------
